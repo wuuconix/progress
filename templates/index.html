@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf8" />
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/fomantic-ui@2.8.8/dist/semantic.min.css" />
+  <script src="https://cdn.jsdelivr.net/npm/fomantic-ui@2.8.8/dist/semantic.min.js"></script>
+  <title>wuuconix's page</title>
+</head>
+<body>
+    <div style="padding-top: 5em;"></div>
+    <div class="ui text container">
+        <div class="ui placeholder segment">
+            {% if filelist == [] %}
+                <div class="ui icon header">
+                    <i class="pdf file outline icon"></i>
+                    目前文件夹里空空如也
+                </div>
+            {% else %}
+                <div class="ui list">
+                {% for file in filelist%}
+                    <div class="item">
+                        <i class="file icon"></i>
+                        <div class="content">
+                            <a class="header" href="download/{{file}}" data-content="点击下载{{file}}" id="files">{{file}}</a>
+                        </div>
+                    </div>
+                {% endfor %}
+                </div>
+            {% endif %}
+            <div class="ui buttons">
+                <button class="ui primary button" id="button_choose">选择文件</button>
+                <button class="ui positive button" id="button_submit">上传</button>
+            </div>
+            <form action="/upload" method="post" enctype="multipart/form-data" id="form">
+                <input type="file" id="input_file" style="display: none;" name="file">
+            </form>
+            <div class="ui divider"></div>
+            <div class="ui indicating progress" id="progress" data-value="0" data-total="100"> 
+                <div class="bar">
+                    <div class="progress"></div>
+                </div>
+                <div class="label"></div>
+            </div>
+        </div>
+    </div>
+</body>
+
+<script>
+    $(document).ready(function(){
+        $("#progress").hide();
+        $("#button_submit").attr("disabled", true);
+    });
+    $("#button_choose").click(function()
+    {
+        $("#input_file").click();
+    });
+    $("#input_file").bind("input propertychange",function(){
+        var name = ($(this).prop('files')[0]['name']);
+        $("#button_submit").attr("disabled", false);
+        $('#button_choose')[0].innerHTML=name;
+    });
+    $("#button_submit").click(function()
+    {
+        $("#progress").show();
+        var formdata = new FormData($("#form")[0]); 
+        $.ajax({
+            url:'/upload', 
+            type:'post', 
+            xhr: function () {
+                var xhr = $.ajaxSettings.xhr();
+                var starttime = Math.ceil(new Date().getTime() / 1000);
+                xhr.upload.onprogress = function (e) {
+                    if (e.lengthComputable) {
+                        var uploaded = Math.ceil(e.loaded / Math.pow(1024,2));
+                        var spenttime = Math.ceil(new Date().getTime() / 1000) - starttime;
+                        var speed = (uploaded / spenttime).toFixed(2);
+                        var progress = Math.ceil(e.loaded / e.total * 100);
+                        $("#progress").attr('data-value', progress);
+                        $("#progress").progress('update progress', progress);
+                        $("#progress").progress('set label', speed + "MB/s");
+                    }
+                };
+                return xhr;
+            },
+            processData:false, 
+            contentType:false, 
+            data:formdata,
+            success:function (data) {
+                $('body').toast({
+                    title: '恭喜你',
+                    message: "你已经成功将 《" + $('#button_choose')[0].innerHTML + "》 上传至了武丑兄的机械革命。页面即将自动刷新",
+                    showProgress: 'bottom',
+                    classProgress: 'red'
+                });
+                setTimeout("location.reload();", 3000)  
+            }
+        })
+    });
+    $('#progress').progress({
+        label: 'percent',
+    });
+    $('a').popup({
+        on: 'hover'
+    });
+    $("#button_submit").popup({
+        on: 'hover'
+    });
+</script>
